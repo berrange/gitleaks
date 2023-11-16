@@ -8,39 +8,39 @@ import (
 // Finding contains information about strings that
 // have been captured by a tree-sitter query.
 type Finding struct {
-	Description string
-	StartLine   int
-	EndLine     int
-	StartColumn int
-	EndColumn   int
+	Description string `json:"description"`
+	StartLine   int    `json:"startLine"`
+	EndLine     int    `json:"endLine"`
+	StartColumn int    `json:"startColum"`
+	EndColumn   int    `json:"endColumn"`
 
-	Line string `json:"-"`
+	Line string `json:"line"`
 
-	Match string
+	Match string `json:"match"`
 
 	// Secret contains the full content of what is matched in
 	// the tree-sitter query.
-	Secret string
+	Secret string `json:"secret"`
 
 	// File is the name of the file containing the finding
-	File        string
-	SymlinkFile string
-	Commit      string
+	File        string `json:"file"`
+	SymlinkFile string `json:"symlinkFile"`
+	Commit      string `json:"commit"`
 
 	// Entropy is the shannon entropy of Value
-	Entropy float32
+	Entropy float32 `json:"entry"`
 
-	Author  string
-	Email   string
-	Date    string
-	Message string
-	Tags    []string
+	Author  string   `json:"author"`
+	Email   string   `json:"email"`
+	Date    string   `json:"date"`
+	Message string   `json:"message"`
+	Tags    []string `json:"tags"`
 
 	// Rule is the name of the rule that was matched
-	RuleID string
+	RuleID string `json:"ruleID"`
 
 	// unique identifier
-	Fingerprint string
+	Fingerprint string `json:"fingerprint"`
 }
 
 // Redact removes sensitive information from a finding.

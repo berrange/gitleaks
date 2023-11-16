@@ -3,6 +3,9 @@ package detect
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -507,26 +510,54 @@ func (d *Detector) DetectFiles(source string) ([]report.Finding, error) {
 				return err
 			}
 
-			mimetype, err := filetype.Match(b)
-			if err != nil {
-				return err
-			}
-			if mimetype.MIME.Type == "application" {
-				return nil // skip binary files
-			}
+			sum := sha256.New()
+			sum.Write(b)
+			cache := "../" + hex.EncodeToString(sum.Sum(nil)) + ".leaks"
 
-			fragment := Fragment{
-				Raw:      string(b),
-				FilePath: p.Path,
+			_, err = os.Stat(cache)
+			useCache := false
+			fmt.Printf("path: %s cache %v\n", p.Path, useCache)
+			if err == nil {
+				useCache = true
 			}
-			if p.Symlink != "" {
-				fragment.SymlinkFile = p.Symlink
+			findings := []report.Finding{}
+			if useCache {
+				c, _ := os.Open(cache)
+				decoder := json.NewDecoder(c)
+				decoder.Decode(&findings)
+			} else {
+
+				mimetype, err := filetype.Match(b)
+				if err != nil {
+					return err
+				}
+				if mimetype.MIME.Type == "application" {
+					return nil // skip binary files
+				}
+
+				fragment := Fragment{
+					Raw:      string(b),
+					FilePath: p.Path,
+				}
+				if p.Symlink != "" {
+					fragment.SymlinkFile = p.Symlink
+				}
+				findings = d.Detect(fragment)
 			}
-			for _, finding := range d.Detect(fragment) {
+			for _, finding := range findings {
 				// need to add 1 since line counting starts at 1
 				finding.EndLine++
 				finding.StartLine++
 				d.addFinding(finding)
+			}
+
+			if !useCache {
+				c, _ := os.Create(cache)
+
+				encoder := json.NewEncoder(c)
+				encoder.Encode(findings)
+
+				c.Close()
 			}
 
 			return nil
